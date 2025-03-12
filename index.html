@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru" style="overflow: hidden;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Премиум Кнопка v5.0</title>
+    <style>
+        :root {
+            --blur-intensity: 12px;
+            --transition-time: 0.4s;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('background.jpg') center/cover no-repeat fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow: hidden;
+            filter: brightness(1);
+            transition: filter var(--transition-time);
+        }
+
+        /* Измененные параметры кнопки */
+        #mainButton {
+            width: 80vw;
+            height: 80vw;
+            border: none;
+            background: url('image.jpg') center/cover no-repeat;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: all var(--transition-time) cubic-bezier(0.25, 0.1, 0.25, 1);
+            position: relative;
+            transform: translateZ(0);
+            will-change: transform, filter;
+        }
+
+        #mainButton::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            filter: blur(var(--blur-intensity));
+            opacity: 0;
+            transition: opacity var(--transition-time);
+            z-index: -1;
+        }
+
+        #mainButton:active {
+            transform: scale(0.95);
+            filter: brightness(0.9);
+        }
+
+        #mainButton:active::before {
+            opacity: 0.6;
+            transition-duration: 0.2s;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                background: #1a1a1a;
+                color: white;
+                font-family: Arial;
+                text-align: center;
+                padding: 20px;
+            }
+            #mainButton {
+                display: none;
+            }
+            body::after {
+                content: "Система активирована только для мобильных устройств";
+                font-size: 2em;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            }
+        }
+
+        @keyframes background-pulse {
+            0% { filter: brightness(1) }
+            50% { filter: brightness(1.05) }
+            100% { filter: brightness(1) }
+        }
+    </style>
+</head>
+<body>
+    <button id="mainButton"></button>
+    <audio id="player" src="sound.mp3" preload="auto"></audio>
+
+    <script>
+        (function(){
+            'use strict';
+
+            const animate = (() => {
+                let lastTime = 0;
+                const vendors = ['ms', 'moz', 'webkit', 'o'];
+                for(let x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+                    window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+                    window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+                        || window[vendors[x]+'CancelRequestAnimationFrame'];
+                }
+
+                return {
+                    start: callback => {
+                        const loop = timestamp => {
+                            const deltaTime = timestamp - lastTime;
+                            if(deltaTime >= 16) {
+                                callback(deltaTime);
+                                lastTime = timestamp;
+                            }
+                            requestAnimationFrame(loop);
+                        };
+                        requestAnimationFrame(loop);
+                    }
+                };
+            })();
+
+            const vibrate = pattern => {
+                try {
+                    if(navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                } catch(e) {}
+            };
+
+            const applyBlur = (element, intensity) => {
+                element.style.setProperty('--blur-intensity', `${intensity}px`);
+            };
+
+            const button = document.getElementById('mainButton');
+            const audio = document.getElementById('player');
+            let isActive = false;
+
+            animate.start(() => {});
+
+            button.addEventListener('click', function handler(e) {
+                if(isActive) return;
+                isActive = true;
+
+                vibrate();
+                applyBlur(button, 20);
+
+                audio.play().catch(() => {
+                    button.style.display = 'none';
+                });
+
+                this.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.style.opacity = '0';
+                this.style.transform = 'scale(1.5) rotate(360deg)';
+
+                document.body.style.animation = 'background-pulse 2s infinite';
+
+                setTimeout(() => {
+                    this.style.display = 'none';
+                }, 800);
+
+                this.removeEventListener('click', handler);
+            });
+
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            window.addEventListener('beforeunload', e => e.returnValue = '');
+        })();
+    </script>
+</body>
+</html>
